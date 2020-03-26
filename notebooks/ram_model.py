@@ -3,6 +3,7 @@ import climlab
 from attrdict import AttrDict
 from climlab.process import TimeDependentProcess
 import numpy as np
+import warnings
 
 class Turbulence(TimeDependentProcess):
     """
@@ -99,7 +100,7 @@ class Turbulence(TimeDependentProcess):
         #calculate the atmospheric turbulent flux
         self.atm_turbulent_flux = -self.atm_diffk * self.dtheta_dz * (cp_air*density) #W/m^2
         #calculate/prescribe surface turbulent flux
-        self.sfc_turbulent_flux = self.total_sfc_flux #W/m^2
+        self.sfc_turbulent_flux =  -(self.atm_diffk * self.dtheta_dz * (cp_air*density))[-1] #W/m^2
         # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
         self.atm_hr = (np.diff(self.atm_turbulent_flux)/np.diff(self.z_bounds))/(cp_air*density) #K/sec
         self.sfc_hr= (np.asarray(self.sfc_turbulent_flux)/1)/(cp_ice*density_ice) #K/sec
@@ -113,8 +114,8 @@ class Turbulence(TimeDependentProcess):
         return tendencies
 
 def init_ram(
-        ds, m, CO2, 
-        surface_diffk = None, albedo = .8,timestep = 600
+        ds, m, CO2, timestep,
+        surface_diffk = None, albedo = .8
     ):
      #create two domains: atm and surface
     sfc, atm=climlab.domain.single_column(lev=ds['Pressure'].sel(month=m).isel(level = slice(0,-1)).values);
@@ -173,3 +174,20 @@ def init_ram(
     ram.compute()
     
     return ram
+
+
+def annual_mean_sfc_diffk(ds, ram_dict):
+    sum_surface_diffk = 0
+    for m in np.asarray(ds['month']):
+            sum_surface_diffk += ram_dict[0.00038][m].surface_diffk
+    average_surface_diffk = sum_surface_diffk/12
+    return average_surface_diffk
+
+def fill_ensemble(ds, ram_dict, timestep, surface_diffk):
+    for CO2 in ds['CO2_list'].values:
+        ram_dict[CO2] = {}
+        for m in np.asarray(ds['month']):
+            ram = init_ram(ds = ds, m = m, CO2 = CO2, timestep = timestep, surface_diffk = surface_diffk)
+            ram_dict[CO2][m] = {}
+            ram_dict[CO2][m] = ram
+    return ram_dict
