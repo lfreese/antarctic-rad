@@ -96,14 +96,14 @@ class Turbulence(TimeDependentProcess):
         #dtheta_dz_init (length of n+1)
         self.dtheta_dz = np.zeros(len(self.state['Tatm']) +1)
         self.dtheta_dz[1:] = np.diff(self.theta)/np.diff(self.z)
-        self.dtheta_dz[0] =  0 #TOA flux is zero
+        self.dtheta_dz[0] =  0 #TOA flux is zero so we set this to zero so that when they are multiplied TOA flux = 0
         #calculate the atmospheric turbulent flux
         self.atm_turbulent_flux = -self.atm_diffk * self.dtheta_dz * (cp_air*density) #W/m^2
         #calculate/prescribe surface turbulent flux
         self.sfc_turbulent_flux =  -(self.atm_diffk * self.dtheta_dz * (cp_air*density))[-1] #W/m^2
         # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
         self.atm_hr = (np.diff(self.atm_turbulent_flux)/np.diff(self.z_bounds))/(cp_air*density) #K/sec
-        self.sfc_hr= (np.asarray(self.sfc_turbulent_flux)/1)/(cp_ice*density_ice) #K/sec
+        self.sfc_hr= [(np.asarray(self.sfc_turbulent_flux)/1)/(cp_ice*density_ice)] #K/sec
         self.hr = np.concatenate([self.atm_hr,self.sfc_hr])
         tendencies = {'Tatm' : self.atm_hr, 'Ts' : self.sfc_hr}
         
@@ -166,7 +166,7 @@ def init_ram(
     ram.compute()
     #advective model setup (coupled to rad model)
     adv = climlab.process.external_forcing.ExternalForcing(state = state, turb = turb, ram = ram)
-    normal_advection = -((ram.TdotSW_clr + ram.TdotLW_clr)/climlab.constants.seconds_per_day + turb.atm_hr) #(K/day + k/day)/(sec/day) + K/sec
+    normal_advection = -((ram.TdotSW_clr + ram.TdotLW_clr)/climlab.constants.seconds_per_day + turb.atm_hr) #(K/day + K/day)/(sec/day) + K/sec
     adv.forcing_tendencies['Tatm'] = normal_advection 
     #add advection
     ram.add_subprocess('Advection', adv)
