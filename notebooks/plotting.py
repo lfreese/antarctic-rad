@@ -82,7 +82,7 @@ def plot_time_dif(results_dict, outputs, output_dict, CO2_conc1, time1, timestep
     for idx, output in enumerate(outputs):
         ax = fig.add_subplot(rows, columns, idx +1)
         
-        if (output == 'TdotLW_clr' or output == 'TdotSW_clr' or output == 'Tatm' or output == 'atm_hr' or output == 'advection_Tatm'):
+        if (output == 'TdotLW_clr' or output == 'TdotSW_clr' or output == 'Tatm' or output == 'atm_hr' or output == 'advection_Tatm' or output == 'atm_diffk' or output == ''):
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month][:-1])
         else:
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month])          
