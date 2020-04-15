@@ -20,6 +20,7 @@ class Turbulence(TimeDependentProcess):
         self.time_type = 'explicit' #explicit time calculations
         ### add new diagnostics
         self.add_diagnostic('total_sfc_flux_init', 0. * self.Ts)
+        self.add_diagnostic('total_sfc_flux', 0. * self.Ts)
         self.add_diagnostic('theta_init', 0. * (self.Tatm))
         self.add_diagnostic('dtheta_dz_near_surf_init', 0. * self.Ts)
         self.add_diagnostic('surface_diffk', 0. * self.Ts)
@@ -46,7 +47,8 @@ class Turbulence(TimeDependentProcess):
         self.lev_bounds[0] = self.lev_bounds[1]-2*(self.lev_bounds[1] - self.lev[0])
         self.lev_bounds[-1] =  self.lev_bounds[-2]+2*(self.lev[-1] - self.lev_bounds[-2])
         #altitude (n)
-        self.z = (self.dataset['Altitude'].sel(month = m) - self.dataset['Altitude'].sel(month = m).isel(level = -1))
+        self.z[:-1] = (self.dataset['Altitude'].sel(month = m) - self.dataset['Altitude'].sel(month = m).isel(level = -1))[:-1]
+        self.z[-1] = self.z[-2]/2
         #altitude bounds (n)
         self.z_bounds = np.zeros(len(state['Tatm']) + 1)
         for n in range(len(state['Tatm'])-1):
@@ -84,11 +86,9 @@ class Turbulence(TimeDependentProcess):
         cp_ice = 2060 #specific heat of ice
         density = 1.05 #density of air kg/m^3
         density_ice = 900 #kg/m^3
-        #print(self.state['Tatm'])
         #surface flux (LW + SW)
         self.total_sfc_flux = (self.rad.diagnostics['SW_sfc_clr']- self.rad.diagnostics['LW_sfc_clr']) #W/m^2
         #theta (length of n)
-        print(self.state['Tatm'])
         self.theta = self.state['Tatm']*(np.asarray(self.dataset['Pressure'].sel(month = self.m).isel(level = -1))/self.lev)**(self.R_cp)#K   
         #dtheta_dz_init (length of n+1)
         self.dtheta_dz = np.zeros(len(self.state['Tatm']))
@@ -171,7 +171,7 @@ def init_ram(
     #add advection
     ram.add_subprocess('Advection', adv)
     #compute ram
-    #ram.compute()
+    ram.compute()
     
     return ram
 
@@ -191,6 +191,4 @@ def fill_ensemble(ds, ram_dict, timestep, surface_diffk):
             ram = init_ram(ds = ds, m = m, CO2 = CO2, timestep = timestep, surface_diffk = surface_diffk)
             ram_dict[CO2][m] = {}
             ram_dict[CO2][m] = ram
-            break
-        break
     return ram_dict

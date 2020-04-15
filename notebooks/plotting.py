@@ -13,24 +13,24 @@ def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1
                     'LW_flux_net_clr':r'Longwave Flux ($\frac{W}{m^2}$)', 
                     'TdotLW_clr':r'Longwave Heating Rate ($\frac{K}{s}$)',
                     'TdotSW_clr':r'Shortwave Heating Rate ($\frac{K}{s}$)',
-                    'atm_hr':r'Turbulent Heating Rate ($\frac{K}{s}$)',
+                    'turb_atm_hr':r'Turbulent Heating Rate ($\frac{K}{s}$)',
                     'advection_Tatm':r'Advective Heating Rate ($\frac{K}{s}$)'}
     for idx, output in enumerate(outputs):  
         ax = fig.add_subplot(rows, columns, idx +1)
-        if (output == 'TdotLW_clr' or output == 'TdotSW_clr' or output == 'Tatm' or output == 'atm_hr' or output == 'advection_Tatm'):
+        if (output == 'atm_diffk' or output == 'dtheta_dz' or output == 'atm_turbulent_flux'):
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month][:-1])
         else:
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month])
         yidx = y1 < ylim
         y1 = y1[yidx]
-            
+        
         if (output == 'TdotLW_clr' or output == 'TdotSW_clr'):
             x1 = np.asarray(results_dict[time1][output][CO2_conc1][month])/86400
         else: 
             x1 = np.asarray(results_dict[time1][output][CO2_conc1][month])
         x1 = x1[yidx]
 
-        if (output == 'TdotLW_clr' or output == 'TdotSW_clr' or output == 'Tatm' or output == 'atm_hr' or output == 'advection_Tatm'):
+        if (output == 'atm_diffk' or output == 'dtheta_dz' or output == 'atm_turbulent_flux'):
             y2 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc2][month][:-1])
         else:
             y2 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc2][month])  
@@ -77,12 +77,13 @@ def plot_time_dif(results_dict, outputs, output_dict, CO2_conc1, time1, timestep
                     'LW_flux_net_clr':r'Longwave Flux ($\frac{W}{m^2}$)', 
                     'TdotLW_clr':r'Longwave Heating Rate ($\frac{K}{s}$)',
                     'TdotSW_clr':r'Shortwave Heating Rate ($\frac{K}{s}$)',
-                    'atm_hr':r'Turbulent Heating Rate ($\frac{K}{s}$)',
-                    'advection_Tatm':r'Advective Heating Rate ($\frac{K}{s}$)'}
+                    'turb_atm_hr':r'Turbulent Heating Rate ($\frac{K}{s}$)',
+                    'advection_Tatm':r'Advective Heating Rate ($\frac{K}{s}$)',
+                       'atm_turbulent_flux': r'Atmospheric Turbulent Flux ($\frac{W}{m^2}$)'}
     for idx, output in enumerate(outputs):
         ax = fig.add_subplot(rows, columns, idx +1)
         
-        if (output == 'TdotLW_clr' or output == 'TdotSW_clr' or output == 'Tatm' or output == 'atm_hr' or output == 'advection_Tatm' or output == 'atm_diffk' or output == ''):
+        if (output == 'atm_diffk' or output == 'dtheta_dz' or output == 'atm_turbulent_flux'):
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month][:-1])
         else:
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month])          
@@ -97,7 +98,7 @@ def plot_time_dif(results_dict, outputs, output_dict, CO2_conc1, time1, timestep
         if diff_only == False:
             plt.plot(x1, y1, label = f'{output} at {time1 / climlab.constants.seconds_per_day} days');
         for time2 in timesteps:
-            if (output == 'TdotLW_clr' or output == 'TdotSW_clr' or output == 'Tatm' or output == 'atm_hr' or output == 'advection_Tatm'):
+            if (output == 'atm_diffk' or output == 'dtheta_dz' or output == 'atm_turbulent_flux'):
                 y2 = np.asarray(results_dict[time2][output_dict['bounds'][output]][CO2_conc1][month][:-1])
             else:
                 y2 = np.asarray(results_dict[time2][output_dict['bounds'][output]][CO2_conc1][month])
@@ -123,3 +124,5 @@ def plot_time_dif(results_dict, outputs, output_dict, CO2_conc1, time1, timestep
             plt.xlabel(f'{output}')
             plt.xticks(rotation = 45)
             plt.tight_layout()
+
+            
