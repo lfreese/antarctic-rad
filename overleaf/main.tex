@@ -11,6 +11,7 @@
 \usepackage{gensymb}
 \usepackage{natbib}
 \usepackage{bm}
+\usepackage[version=4]{mhchem}
 
 \titleformat*{\subsection}{\normalfont\fontfamily{phv}}
 %\titleformat*{\subsection}[runin]{}{}{}{}[]
@@ -20,7 +21,7 @@
 \title{{\textsc{\Large Antarctic Radiation}}}
 \author{\textsc{Lyssa Freese}
 \\\\
-Advised by Dr. Tim Cronin}
+Advised by Prof. Tim Cronin}
 
 \begin{document}
 \maketitle
@@ -33,9 +34,8 @@ Advised by Dr. Tim Cronin}
 \bigskip
 \bigskip
 
-{\textsc{Abstract.} 
-TBD}
-
+{\textsc{Abstract.} }
+Greenhouse gases (GHG), such as \ce{CO2}, impact global and local outgoing longwave radiation (OLR). The Antarctic is known for its a strong temperature inversion, where the addition of GHG can lead to increased OLR due to higher radiating temperatures higher in the atmosphere. Here we develop a simple radiative-advective-turbulence single-column model based on observed temperatures at the South Pole and timestep it forward under different \ce{CO2} concentrations. We discuss 1. stratosphere vs. troposphere role; 2. surface longwave flux under varying CO2 concentrations; 3. when time stepped, surface LW radiation and OLR do xyz. This basic single column model could be broadened across multiple sites throughout Antarctica elucidate further understandings of the negative greenhouse effect.
 \bigskip
 \bigskip 
 \clearpage
@@ -45,22 +45,70 @@ TBD}
 \setlength{\rightskip}{0cm}
 
 \section{Introduction}
-TBD
- \citep{citation ex}.
+The Antarctic is characterized by a strong, year-round temperature inversion in the bottom 1km of the atmosphere, in which the surface temperature of the central part of the continent is colder than the temperature \citep{hudson_look_2005}. This leads to increased radiating temperatures higher in the atmosphere, and thus higher outgoing long-wave emissions \citep{schmithusen_how_2015}. This means that the local impacts of changes in greenhouse gases (GHG) such as \ce{CO2} are different than under non-inversion scenarios.
+
+Initial work has found that the greenhouse effect of \ce{CO2} in the Antarctic is zero or possibly negative, due to the increased outgoing longwave radiation (OLR) in higher GHG scenarios\citep{schmithusen_how_2015}. Building on this, it has been found that increasing chlorofluorocarbons (CFCs) within a small band of the atmosphere led to a negative effective radiative forcing (ERF), cooling in the troposphere where the CFCs were increased, and overall increases in OLR, consistent with the previous findings. This work supported a further conclusion that there was continued warming at the surface of the Antarctic, in contrast to findings by Schmithüsen that increased GHG over the Antarctic would lead to overall cooling. This conclusion that there is surface temperature warming with atmospheric temperature cooling was further backed by work on a single column grey-gas model, in which an increase in optical depth led to surface temperature warming and atmospheric cooling \citep{payne_conceptual_2015}.
+**ON SINGLE COLUMN MODEL***
+With this background, it is important to understand the role that increased GHG play in not only the temperature structure of Antarctica, but on the OLR, surface longwave flux, surface temperature and atmospheric temperature within a radiative advective single column model. 
 
 
+\section{Methods}
+\subsection{Temperature and gas data}
+ To create monthly column gas and temperature profiles, we utilize monthly average temperature profiles from the South Pole station, modified according to Schmithüsen et al., as well as yearly average ozone volumetric mixing ratio (vmr), and water vapor vmr (w) from their study  \citep{schmithusen_how_2015}. The column specific humidity is calculated at every level using
+\begin{equation}
+    q = w/1+w
+\end{equation}
+
+ We adjust the lowest levels of the temperature, ozone, and specific humidity profile to measure one reading every 100m in order to satisfy the CFL condition of $\frac{\kappa_0*timestep}{dz^2_{surf}}$, where our timestep is one hour. Six column CO2 profiles are created, at 100, 200, 380, 760, 1000, and 1500 ppm, in order to give a full range of responses to different values. 
 
 \begin{figure}[htb!]
-\noindent\includegraphics[width=0.9\textwidth]{figures/lumpkin_speere2007.jpg}
+\noindent\includegraphics[width=1\textwidth]{../figures/}
 \centering
-\caption{Figure modified from \cite{Lumpkin2007}. Overturning circulation of the (top) Atlantic and (bottom) Indo-Pacific Oceans in neutral density coordinates. Gray lines indicate the crest of the Mid-Atlantic Ridge and major topographic features of the (top) Atlantic, (bottom, light) Indian, and (bottom, dark) Pacific Oceans.}
-\label{lumpkin&speere2007}
+\caption{explanation}
+\label{label}
 \end{figure}
+
+\subsection{Model Setup}
+We utilize these monthly temperature profiles in a single column model in CLIMLAB \citep{rose_climlab_2018}, an open source python climate model. We adjust the solar insolation to a monthly mean insolation, to capture the variability in shortwave radiation in summer and winter seasons in the Antarctic. 
+
+Our single-column model is comprised of three part: a radiative, an advective, and a turbulent component. The radiation is calculated utilizing an RRTMG radiation scheme (\linkhttp{http://rtweb.aer.com/rrtm_frame.html}). 
+
+We construct an exponentially decaying turbulent component according to
+\begin{equation}
+    F_{turb} = -\kappa_0*exp(-\frac{z}{d})*\frac{d\theta}{dz}
+\end{equation}
+Where $\kappa_0$ is a surface turbulent diffusivity, scaled exponentially over the height of the column, and $d$ is a scale factor of 100 meters. We calculate an initial monthly $\kappa_0$ as
+\begin{equation}
+    \kappa_0 = \frac{F_{sfc, rad}}{\frac{d\theta}{dz}_{sfc}}
+\end{equation}
+Where $F_{sfc, rad}$ is the surface shortwave flux minus the surface longwave flux, as we assume the total flux at the surface boundary is equal to zero. From this, we average the (nine) positive $\kappa_0$ values, and use this as our final $\kappa_0$ throughout the experiments.
+
+The turbulent heating rate is thus the flux divergence times the specific heat and density of air and ice, for the atmosphere and surface, respectively.
+
+\begin{equation}
+    HR_{turb} = \frac{dF_{turb}}{dz} * c_p * \rho
+\end{equation}
+
+We calculate our advective heating rate based on the initial state, where it is set to equilibrate the sum of the radiative and turbulent heating rates
+
+\begin{equation}
+    \frac{dF_{adv}}{dy} = -(\frac{dF_{rad}}{dz} + \frac{dF_{turb}}{dz})
+\end{equation}
+
+This is held constant throughout time, in order to allow us to look at the adjustments of the radiative and turbulent components in time, based on an initial state. 
+
+We run the model forward for 3 months to assess the change over time in different \ce{CO_2} scenarios.
+
+\section{Results}
+\subsection{Initial State}
+In our initial state, we see a clear temperature inversion, as expected, across all 
+
+\subsection{Change over time}
 
 
 \pagebreak
 \bibliographystyle{apalike}
-\bibliography{mendeley.bib}
+\bibliography{references.bib}
 
 \end{document}
 
