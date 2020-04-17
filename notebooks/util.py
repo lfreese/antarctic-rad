@@ -54,10 +54,10 @@ def adjust_lev(ds, nlevels = 96, name = 'strat'):
     ds.attrs['extra_Altitude'] = ds['Altitude'].sel(level=nlevels+1)
     ds = ds.sel(level=slice(nlevels,0))
     ds.attrs['name'] = name
-    dropped_lev = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,23,24,25,26,27,28,29]
+    dropped_lev = [1,2,3,4,5,6,7,9,10,11,12,14,15,17,18,20,22,24,26]
     #modify our dataset to skip levels near the surface so that it is more spaced out
-    #ds = ds.drop(level = [1,2,3,4,5,6,7,9,10,11,12,14,15,17,18,20,22,24,26]) #drops to one every 100m
-    ds = ds.drop(level = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,24]) #drops to one every 300m
+    ds = ds.drop(level = [1,2,3,4,5,6,7,9,10,11,12,14,15,17,18,20,22,24,26]) #drops to one every 100m
+    #ds = ds.drop(level = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,24]) #drops to one every 300m
     #ds = ds.drop(level = dropped_lev) #drops to one every 500m for the first 1000m
     #ds_strat = ds_strat.drop(level = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28]) #drops to one every 1000m
     print(f'Dropped levels {dropped_lev}')

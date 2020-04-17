@@ -126,3 +126,31 @@ def plot_time_dif(results_dict, outputs, output_dict, CO2_conc1, time1, timestep
             plt.tight_layout()
 
             
+
+def plot_temp(ds, results_dict):
+    fig, ax = plt.subplots(figsize = [8,10])
+    for month in ds['month'].values:
+        x = np.asarray(results_dict[0]['Tatm'][0.00038][month])
+        x = np.append(x, results_dict[0]['Ts'][0.00038][month])
+        y = results_dict[0]['z'][0.00038][month]/1000
+        y = np.append(y, 0.)
+        plt.plot(x, y, label = month)
+        plt.xlabel('Temperature (K)', fontsize = 14)
+        plt.ylabel('Altitude relative to surface level (km)', fontsize = 14)
+        plt.yscale('log')
+        ax.yaxis.set_ticklabels([0, 0,.1,1, 10])
+        plt.title('Monthly Temperature Profiles', fontsize = 20)
+        plt.legend()
+        
+def plot_sfc_TOA_process(ds, results_dict, process, months, single_level_process):
+    fig, axes = plt.subplots(1,2, figsize = [12,4])
+    for idx, month in enumerate(months):
+        for CO2_conc in results_dict[0][process].keys():
+            ax = axes[idx]
+            x = CO2_conc*10e5
+            y = results_dict[0][process][CO2_conc][month]
+            ax.plot(x, y,'o', color = f'C{idx}', linewidth=2)
+            ax.set_xlabel('$CO_2$ Concentration (ppm)', fontsize = 14)
+            ax.set_ylabel(single_level_process[process], fontsize = 14)
+            plt.tight_layout()
+            ax.set_title(f'{month}', fontsize = 14)
