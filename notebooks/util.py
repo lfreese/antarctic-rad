@@ -3,6 +3,17 @@ import xarray as xr
 import numpy as np
 from climlab.solar.insolation import daily_insolation
 
+single_level_process = {'LW_sfc_clr':r'Surface Longwave Flux ($\frac{W}{m^2}$)', 
+                        'Ts': 'Surface Temperature (K)', 
+                        'ASRclr':r'Absorbed Solar Radiation, Top of Atmosphere ($\frac{W}{m^2}$)', 
+                        'SW_sfc_clr':r'Surface Shortwave Flux ($\frac{W}{m^2}$)', 
+                        'total_sfc_flux':r'Total Radiative Surface Flux ($\frac{W}{m^2}$)', 
+                        'dtheta_dz_near_surf_init':r'$\frac{d\theta}{dz}$ ($\frac{K}{m}$)', 
+                        'surface_diffk':r'Surface $\kappa$ ($\frac{m^2}{s}$)', 
+                        'sfc_turbulent_flux':r'Surface Turbulent Flux ($\frac{W}{m^2}$)', 
+                        'turb_sfc_hr':r'Surface Turbulent Heating Rate ($\frac{K}{s}$)', 
+                        'advection_Ts':r'Surface Advection ($\frac{K}{s}$)', 
+                        'OLR':r'OLR ($\frac{W}{m^2}$)'}
 
 def load_soundings():
     atm_df = pd.concat(pd.read_excel('../schmit_data/schmit_compiled_temp_data_final.xlsx', #read in atm data

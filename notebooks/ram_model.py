@@ -50,6 +50,7 @@ class Turbulence(TimeDependentProcess):
         #altitude (n)
         self.z[:-1] = (self.dataset['Altitude'].sel(month = m) - self.dataset['Altitude'].sel(month = m).isel(level = -1))[:-1]
         self.z[-1] = self.z[-2]/2
+        self.z[:-1] += self.z[-1]
         #altitude bounds (n)
         self.z_bounds = np.zeros(len(self.state['Tatm']) + 1)
         for n in range(len(self.state['Tatm'])-1):
@@ -58,7 +59,7 @@ class Turbulence(TimeDependentProcess):
             (self.dataset.attrs['extra_Altitude'].sel(month = m) + 
              self.dataset['Altitude'].sel(month = m).sel(level = len(self.dataset['Altitude'].sel(month = m))-1))/2 - 
             self.dataset['Altitude'].sel(month = m).isel(level = -1)
-        )
+        ) + self.z[-1]
         self.z_bounds[-1] = 0
         
         ### calculate turbulent flux
@@ -85,9 +86,7 @@ class Turbulence(TimeDependentProcess):
         dz_ground = 1.
         z_ground = -.5
         cp_air = 1003 #specific heat of air (at 250 K) J/(kg*K)
-        cp_ice = 2060 #specific heat of ice
         density = 1.05 #density of air kg/m^3
-        density_ice = 900 #kg/m^3
         #surface flux (LW + SW)
         self.total_sfc_flux = (self.rad.diagnostics['SW_sfc_clr'] - self.rad.diagnostics['LW_sfc_clr']) #W/m^2
         #theta (length of n)
@@ -105,7 +104,7 @@ class Turbulence(TimeDependentProcess):
         #ignore bottom z_bounds since this is the surface level
         self.turb_atm_hr[:-1] = -(np.diff(self.atm_turbulent_flux)/np.diff((self.z_bounds))[:-1])/(cp_air*density) #K/sec 
         self.turb_atm_hr[-1] = -((self.atm_turbulent_flux[-1] - self.sfc_turbulent_flux)/(self.z_bounds[-2] - self.z_bounds[-1]))/(cp_air*density) 
-        self.turb_sfc_hr= [-(np.asarray(self.sfc_turbulent_flux)/dz_ground)/(cp_ice*density_ice)] #K/sec
+        self.turb_sfc_hr= [-(np.asarray(self.sfc_turbulent_flux)/dz_ground)/(climlab.utils.heat_capacity.ocean(dz_ground))] #K/sec
         self.turb_hr = np.concatenate([self.turb_atm_hr,self.turb_sfc_hr])
         tendencies = {'Tatm' : self.turb_atm_hr, 'Ts' : self.turb_sfc_hr}
         
@@ -120,7 +119,7 @@ def init_ram(
         surface_diffk = None, albedo = .8
     ):
     #create two domains: atm and surface
-    sfc, atm=climlab.domain.single_column(lev=ds['Pressure'].sel(month=m).values);
+    sfc, atm=climlab.domain.single_column(lev=ds['Pressure'].sel(month=m).values, water_depth=1.);
     #create an atmospheric state
     state = AttrDict()
     #set up a surface temperature profile 
