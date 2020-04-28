@@ -45,11 +45,11 @@ def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1
         x2 = x2[yidx]
 
         if diff_only:
-            plt.plot(x2-x1, y1, color = colors[3], linewidth = 2, linestyle = '--');
+            plt.plot(x2-x1, y1, color = colors[4], linewidth = 2, linestyle = '--');
             plt.title(f'Difference between {CO2_conc1*(1e6)} ppm and {CO2_conc2*(1e6)} ppm \n {atm_process_dict[output]} in {month} at {time1/ climlab.constants.seconds_per_day} days')
         else:
             plt.plot(x1, y1, color = colors[2], linewidth = 2, label = f'{output} at {CO2_conc1*(1e6)} ppm');
-            plt.plot(x2, y2, color = colors[3], linewidth = 2,label = f'{output} at {CO2_conc2*(1e6)} ppm');
+            plt.plot(x2, y2, color = colors[4], linewidth = 2,label = f'{output} at {CO2_conc2*(1e6)} ppm');
             plt.title(f'{atm_process_dict[output]} in {month} at CO2 {CO2_conc1*(1e6)} ppm and {CO2_conc2*(1e6)} ppm \n at {np.round(time1 / climlab.constants.seconds_per_day, 3)} days')
             plt.legend()
         
@@ -59,8 +59,8 @@ def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1
         plt.xticks(rotation = 45)
         plt.tight_layout()
         
-def single_level_plot(results_dict, output_list, CO2_conc1, CO2_conc2, month_list):
-    fig, axes = plt.subplots(len(output_list), len(month_list), figsize = [10,1])
+def single_level_plot(results_dict, output_list, CO2_conc1, CO2_conc2, month_list, figsize):
+    fig, axes = plt.subplots(len(output_list), len(month_list), figsize = figsize)
     colors = cm.twilight(np.linspace(0,1,7))
     for idx_m, month in enumerate(month_list):
         for idx_o, output in enumerate(output_list):
@@ -279,3 +279,16 @@ def plot_adv_LW_hr(results_dict, month, CO2_conc1, CO2_conc2, time, diff_only = 
     plt.xlabel(f'Heating Rate (K/s)', fontsize = 14)
     plt.xticks(rotation = '45')
     plt.title(f'Sum of LW and Adv HR in {month} at {time} ppm', fontsize = 16);
+    
+def rad_sfc_HR_plot(rad_sfc_HR, results_dict, CO2_conc1, CO2_conc2, month_list, figsize):
+
+    fig = plt.figure(figsize = figsize)
+    colors = cm.twilight(np.linspace(0,1,7))
+    for idx_m, month in enumerate(month_list):
+        plt.subplot(1, 2, idx_m+1)
+        for t in list(results_dict.keys())[0::10]:
+            plt.plot(t / climlab.constants.seconds_per_day,-rad_sfc_HR[t][CO2_conc1][month], c = colors[2], marker = '.', linestyle = '')
+            plt.plot(t / climlab.constants.seconds_per_day,-rad_sfc_HR[t][CO2_conc2][month], c = colors[5], marker = '.', linestyle = '')
+            plt.title(f'{month} Surface Radiative Heating Rate')
+    fig.legend([f'{CO2_conc1*(1e6)}',f'{CO2_conc2*(1e6)}'], title = 'ppm', bbox_to_anchor=(1.1, .95))
+    plt.tight_layout()

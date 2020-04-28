@@ -115,7 +115,7 @@ class Turbulence(TimeDependentProcess):
         return tendencies
 
 def init_ram(
-        ds, m, CO2, timestep,
+        ds, m, CO2, timestep, advection = None,
         surface_diffk = None, albedo = .8
     ):
     #create two domains: atm and surface
@@ -172,7 +172,10 @@ def init_ram(
     #advective model setup (coupled to rad model)
     adv = climlab.process.external_forcing.ExternalForcing(state = state, turb = turb, ram = ram)
     normal_advection = -((ram.TdotSW_clr + ram.TdotLW_clr)/climlab.constants.seconds_per_day + turb.turb_atm_hr) #(K/day + K/day)/(sec/day) + K/sec
-    adv.forcing_tendencies['Tatm'] = normal_advection 
+    if advection == None:
+        adv.forcing_tendencies['Tatm'] = normal_advection 
+    else:
+        adv.forcing_tendencies['Tatm'] = advection[m]
     #add advection
     ram.add_subprocess('Advection', adv)
     #compute ram
@@ -180,7 +183,63 @@ def init_ram(
     
     return ram
 
+def init_ram_no_advection(
+        ds, m, CO2, timestep,
+        surface_diffk = None, albedo = .8
+    ):
+    #create two domains: atm and surface
+    sfc, atm=climlab.domain.single_column(lev=ds['Pressure'].sel(month=m).values, water_depth=1.);
+    #create an atmospheric state
+    state = AttrDict()
+    #set up a surface temperature profile 
+    Ts_dict = {}
+    for month in ds['month'].values:
+        Ts_dict[month] = (ds['Temperature'].sel(month = month)[-1] - 52*(ds['Temperature'].sel(month = month)[-2] - ds['Temperature'].sel(month = month)[-1])/
+                     (ds['Altitude'].sel(month = month)[-2] - ds['Altitude'].sel(month = month)[-1])).values    
+    T_s=climlab.Field(Ts_dict[m], domain=sfc);
+    state['Ts']=T_s #K
+    #set up an atmospheric temperature profile
+    T_atm=climlab.Field(ds['Temperature'].sel(month=m).values, domain=atm);
+    state['Tatm']=T_atm #K
 
+    #radiation model setup
+    rad = climlab.radiation.RRTMG(name='Radiation(all gases)', state = state,
+                                      specific_humidity = ds['spec_humidity'].sel(month = m).values,
+                                      albedo = albedo,
+                                      timestep = timestep,
+                                      ozone_file = None,
+                                      S0 = 1365.2,
+                                      insolation = ds['monthly_insolation'].sel(month = m).values,
+                                      isolvar = 1 #see https://climlab.readthedocs.io/en/latest/_modules/climlab/radiation/rrtm/rrtmg_sw.html#RRTMG_SW._compute_heating_rates 
+                                                  #1 = Solar variability (using NRLSSI2  solar
+                                                    # model) with solar cycle contribution
+                                                    # determined by fraction of solar cycle
+                                                    # with facular and sunspot variations
+                                                    # fixed to their mean variations over the
+                                                    # average of Solar Cycles 13-24;
+                                                    # two amplitude scale factors allow
+                                                    # facular and sunspot adjustments from
+                                                    # mean solar cycle as defined by indsolvar
+                                    )
+    rad.absorber_vmr['O3'] = ds['O3'].sel(month = m).values #kg/kg
+    rad.absorber_vmr['CO2'] = CO2 #kg/kg
+    #create ram
+    ram = climlab.TimeDependentProcess(state = state, timestep = timestep)
+    #add latitude axis
+    lat = climlab.domain.axis.Axis(axis_type='lat', points=-90.)
+    ram.domains['Ts'].axes['lat'] = lat
+    #add radiation
+    ram.add_subprocess('Radiation', rad)
+    #compute ram
+    ram.compute()
+    #turbulence model setup (coupled to rad model, ds, and month)
+    turb = Turbulence(surface_diffk = surface_diffk, name = 'Turbulence', state=state, rad = rad, m = m, ds = ds, timestep = timestep)
+    #add turbulence
+    ram.add_subprocess('Turbulence', turb) #add insolation subprocess
+    #compute ram
+    ram.compute()
+    
+    return ram
 def annual_mean_sfc_diffk(ds, ram_dict):
     sum_surface_diffk = 0
     for m in np.asarray(ds['month']):
@@ -189,11 +248,21 @@ def annual_mean_sfc_diffk(ds, ram_dict):
     average_surface_diffk = sum_surface_diffk/9 #find a better way to get only 9 months in here
     return average_surface_diffk
 
-def fill_ensemble(ds, ram_dict, timestep, surface_diffk):
+def fill_ensemble(ds, ram_dict, timestep, advection, surface_diffk):
     for CO2 in ds['CO2_list'].values:
         ram_dict[CO2] = {}
         for m in np.asarray(ds['month']):
-            ram = init_ram(ds = ds, m = m, CO2 = CO2, timestep = timestep, surface_diffk = surface_diffk)
+            ram = init_ram(ds = ds, m = m, CO2 = CO2, timestep = timestep, advection = advection, surface_diffk = surface_diffk)
+            ram_dict[CO2][m] = {}
+            ram_dict[CO2][m] = ram
+    return ram_dict
+
+
+def fill_ensemble_no_advection(ds, ram_dict, timestep, surface_diffk):
+    for CO2 in ds['CO2_list'].values:
+        ram_dict[CO2] = {}
+        for m in np.asarray(ds['month']):
+            ram = init_ram_no_advection(ds = ds, m = m, CO2 = CO2, timestep = timestep, surface_diffk = surface_diffk)
             ram_dict[CO2][m] = {}
             ram_dict[CO2][m] = ram
     return ram_dict

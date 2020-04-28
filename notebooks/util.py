@@ -37,7 +37,7 @@ def load_soundings():
     ds.__delitem__('CO') #delete unused variables
     ds.__delitem__('CH4') #delete unused variables
     ds.__delitem__('Height') #delete unused variables
-    ds['CO2_list'] = np.array([100.,200.,380.,760.,1000.,1500.])/(1e6) #list of CO2 values we will use
+    ds['CO2_list'] = np.array([0.,100.,200.,380.,760.,1000.,1500.])/(1e6) #list of CO2 values we will use
 
     ds.attrs['name'] = 'all'
     
