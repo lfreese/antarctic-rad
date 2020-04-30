@@ -11,6 +11,7 @@
 \usepackage{gensymb}
 \usepackage{natbib}
 \usepackage{bm}
+\usepackage{setspace}
 \usepackage[version=4]{mhchem}
 
 \titleformat*{\subsection}{\normalfont\fontfamily{phv}}
@@ -22,7 +23,7 @@
 \author{\textsc{Lyssa Freese}
 \\\\
 Advised by Prof. Tim Cronin}
-
+\doublespacing
 \begin{document}
 \maketitle
 \thispagestyle{empty}
@@ -35,7 +36,7 @@ Advised by Prof. Tim Cronin}
 \bigskip
 
 {\textsc{Abstract.} }
-Greenhouse gases (GHG), such as \ce{CO2}, impact global and local outgoing longwave radiation (OLR). The Antarctic is known for its a strong temperature inversion, where the addition of GHG can lead to increased OLR due to higher radiating temperatures higher in the atmosphere. Here we develop a simple radiative-advective-turbulence single-column model based on observed temperatures at the South Pole and timestep it forward under different \ce{CO2} concentrations. We discuss 1. stratosphere vs. troposphere role; 2. surface longwave flux under varying CO2 concentrations; 3. when time stepped, surface LW radiation and OLR do xyz. This basic single column model could be broadened across multiple sites throughout Antarctica elucidate further understandings of the negative greenhouse effect.
+Greenhouse gases (GHG), such as \ce{CO2}, impact global and local outgoing longwave radiation (OLR). The Antarctic is known for its a strong temperature inversion, where the addition of GHG can lead to increased OLR due to higher radiating temperatures higher in the atmosphere. Here we develop a radiative-advective-turbulence single-column model based on observed temperatures at the South Pole and timestep it forward under different \ce{CO2} concentrations. We discuss 1. initial conditions under varying \ce{CO_2} concentrations and 2. variation of temperature and radiative fluxes as we timestep the mdoel forward. We find increased temperatures at the surface, 
 \bigskip
 \bigskip 
 \clearpage
@@ -54,7 +55,7 @@ We aim to bring together much of this work by developing a single-column radiati
 
 \section{Methods}
 \subsection{Temperature and gas data}
- To create monthly column gas and temperature profiles, we utilize monthly average temperature profiles from the South Pole station, modified according to Schmithüsen et al., as well as yearly average ozone volumetric mixing ratio (vmr), and water vapor vmr (w) from their study  \citep{schmithusen_how_2015}. The column specific humidity is calculated at every level using
+ To create monthly column gas and temperature profiles (\ref{fig:temperature_profiles}), we utilize monthly average temperature profiles from the South Pole station, modified according to Schmithüsen et al., as well as yearly average ozone volumetric mixing ratio (vmr), and water vapor vmr (w) from their study  \citep{schmithusen_how_2015}. The column specific humidity is calculated at every level using
 \begin{equation}
     q = w/1+w
 \end{equation}
@@ -62,16 +63,16 @@ We aim to bring together much of this work by developing a single-column radiati
  We adjust the lowest levels of the temperature, ozone, and specific humidity profile to measure one reading every 100m in order to satisfy the CFL condition of $\frac{\kappa_0*timestep}{dz^2_{surf}}$, where our timestep is one hour. Six column CO2 profiles are created, at 100, 200, 380, 760, 1000, and 1500 ppm, in order to give a full range of responses to different values. 
 
 \begin{figure}[htb!]
-\noindent\includegraphics[width=1\textwidth]{../figures/}
+\noindent\includegraphics[width=.5\textwidth]{figures/initial_temperature_profiles.png}
 \centering
-\caption{explanation}
-\label{label}
+\caption{Initial monthly temperature profiles as created by Schmithüsen et al.}
+\label{fig:temperature_profiles}
 \end{figure}
 
 \subsection{Model Setup}
 We utilize these monthly temperature profiles in a single column model in CLIMLAB \citep{rose_climlab_2018}, an open source python climate model. We adjust the solar insolation to a monthly mean insolation, to capture the variability in shortwave radiation in summer and winter seasons in the Antarctic. 
 
-Our single-column model is comprised of three part: a radiative, an advective, and a turbulent component. The radiation is calculated utilizing an RRTMG radiation scheme (\linkhttp{http://rtweb.aer.com/rrtm_frame.html}). 
+Our single-column model is comprised of three part: a radiative, an advective, and a turbulent component. The radiation is calculated utilizing an RRTMG radiation scheme (\linkhttp{http://rtweb.aer.com/rrtm\_frame.html}). 
 
 We construct an exponentially decaying turbulent component according to
 \begin{equation}
@@ -101,10 +102,42 @@ We run the model forward for 3 months to assess the change over time in differen
 
 \section{Results}
 \subsection{Initial State}
-In our initial state, we see a clear temperature inversion, as expected, across all 
+In our initial state, we see a clear temperature inversion as in \ref{fig:temperature_profiles}, as expected, across all months, which is stronger during the austral winter when surface warming from shortwave radiation is at a low (initial surface shortwave values can be seen in \ref{fig:init_sfc_SW}). 
+
+Additionally, if we look at the initial conditions under each of our column \ce{CO_2} concentrations, we find different values for our OLR, surface net longwave flux, and surface net shortwave flux. OLR (\ref{fig:init_OLR}) increases with atmospheric \ce{CO_2} concentration in December, which is representative of the austral summer, but decreases with \ce{CO_2} concentrations in June, which is representative of the austral winter. This decreasing trend is evident across May-August, while the rest of the year exhibits increases in OLR with increased \ce{CO_2}. This is in line with the conclusions of previous work, which find positive radiative forcing by \ce{CO_2} during the winter\citep{schmithusen_how_2015}. 
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1\textwidth]{figures/OLR_init.png}
+\centering
+\caption{Initial OLR calculated at our six different \ce{CO_2} levels in June, to represent austral winter, and December, to represent austral summer.}
+\label{fig:init_OLR}
+\end{figure}
+
+This increase in OLR with increasing \ce{CO_2} concentrations leads to increasing TOA radiative loss under higher GHG scenarios. 
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1\textwidth]{figures/sfcLW_init.png}
+\centering
+\caption{Initial surface net longwave radiation calculated at our six different \ce{CO_2} levels in June and December.}
+\label{fig:init_sfc_LW}
+\end{figure}
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1\textwidth]{figures/sfcSW_init.png}
+\centering
+\caption{Initial surface net shortwave calculated at our six different \ce{CO_2} levels in June and December.}
+\label{fig:init_sfc_SW}
+\end{figure}
+
 
 \subsection{Change over time}
+Here we look at the impacts of \ce{CO_2} concentration and season after running the model forward for 3 months, specifically focusing on 380ppm and 760ppm scenarios. 
 
+Both atmospheric and surface temperatures increase over time across all months. Our longwave fluxes are also increasing over time, and the resulting heating rates are cooling the atmosphere in both the June and December case, as can be seen in FIGURE****. Shortwave fluxes, on the other hand, are negligibly small in June, but acting to warm the atmosphere in December. The turbulent heating rate cools the lower atmosphere in June and December, aside from the lowest atmospheric level in December, during which it is warming. Lastly, the advection is warming the entire column during June, to counteract the combined cooling of the longwave heating rate and turbulent heating rates. During December, it is more complicated, as the advection cools the lower troposphere to counteract turbulence, and switches between cooling and warming throughout the upper levels of the atmosphere in order to counteract the combined cooling and heating provided by the longwave and shortwave, respectively. This leads to a net heating throughout the atmosphere in all seasons, and thus the warming that we find.
+
+Under different \ce{CO_2} concentrations, at our final timestep, we find that the surface temperature warms an additional 1.1\degree of warming during June, and an additional 1.5\degree of warming in December. This supports previous work in the conclusion that the sign of TOA OLR cannot be used to immediately diagnose the surface level temperature response to GHG in the case of the Antarctic. Furthermore, this extends to the atmosphere, as long as we are looking at the combined effects of advection and radiation.
+
+We found, in the initial conditions, that the OLR decreased with \ce{CO_2} during all but the winter months. 
 
 \pagebreak
 \bibliographystyle{apalike}
