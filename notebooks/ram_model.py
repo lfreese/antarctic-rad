@@ -111,7 +111,7 @@ class Turbulence(TimeDependentProcess):
         # check that CFL condition is met
         self._CFL = self.surface_diffk*(self.time['timestep']/(np.diff(self.z_bounds)**2))[-1] 
         if self._CFL > 1.:
-            warnings.warn(f"CFL Condition not met, {self._CFL}, timestep too large or lower level z difference too small for {m}, CO2 {CO2} kg/kg")
+            warnings.warn(f"CFL Condition not met, {self._CFL}, timestep too large or lower level z difference too small for {self.m}, CO2 kg/kg")
         return tendencies
 
 def init_ram(
@@ -175,7 +175,7 @@ def init_ram(
     if advection == None:
         adv.forcing_tendencies['Tatm'] = normal_advection 
     else:
-        adv.forcing_tendencies['Tatm'] = advection[m]
+        adv.forcing_tendencies['Tatm'] = np.copy(advection[m])
     #add advection
     ram.add_subprocess('Advection', adv)
     #compute ram
@@ -242,10 +242,12 @@ def init_ram_no_advection(
     return ram
 def annual_mean_sfc_diffk(ds, ram_dict):
     sum_surface_diffk = 0
-    for m in np.asarray(ds['month']):
+    months_for_mean = 0
+    for m in ds['month'].values:
         if ram_dict[0.00038][m].surface_diffk >0:
+            months_for_mean +=1
             sum_surface_diffk += ram_dict[0.00038][m].surface_diffk
-    average_surface_diffk = sum_surface_diffk/9 #find a better way to get only 9 months in here
+    average_surface_diffk = sum_surface_diffk/months_for_mean
     return average_surface_diffk
 
 def fill_ensemble(ds, ram_dict, timestep, advection, surface_diffk):

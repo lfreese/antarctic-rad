@@ -15,7 +15,8 @@ def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1
                     'TdotLW_clr':r'Longwave Heating Rate ($\frac{K}{s}$)',
                     'TdotSW_clr':r'Shortwave Heating Rate ($\frac{K}{s}$)',
                     'turb_atm_hr':r'Turbulent Heating Rate ($\frac{K}{s}$)',
-                    'advection_Tatm':r'Advective Heating Rate ($\frac{K}{s}$)'}
+                    'advection_Tatm':r'Advective Heating Rate ($\frac{K}{s}$)',
+                   'atm_turbulent_flux':'Turbulent Flux'}
     colors = cm.twilight(np.linspace(0,1,7))
     for idx, output in enumerate(outputs):  
         ax = fig.add_subplot(rows, columns, idx +1)
@@ -227,7 +228,7 @@ def plot_turbulent_flux(ds, results_dict, month, CO2, timesteps, ylim):
 
 def plot_sfc_TOA_process(ds, results_dict, process, months, single_level_process):
     fig, axes = plt.subplots(1,2, figsize = [12,4])
-    color=iter(cm.twilight(np.linspace(0,1,7)))
+    color=iter(cm.twilight(np.linspace(0,1,8)))
     for CO2_conc in results_dict[0][process].keys():
         c=next(color)
         for idx, month in enumerate(months):
@@ -279,6 +280,7 @@ def plot_adv_LW_hr(results_dict, month, CO2_conc1, CO2_conc2, time, diff_only = 
     plt.xlabel(f'Heating Rate (K/s)', fontsize = 14)
     plt.xticks(rotation = '45')
     plt.title(f'Sum of LW and Adv HR in {month} at {time} ppm', fontsize = 16);
+    
     
 def rad_sfc_HR_plot(rad_sfc_HR, results_dict, CO2_conc1, CO2_conc2, month_list, figsize):
 
