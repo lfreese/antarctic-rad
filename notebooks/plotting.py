@@ -158,37 +158,44 @@ def plot_temp(ds, results_dict):
         plt.title('Monthly Temperature Profiles', fontsize = 20)
         plt.legend(title = 'Months')
 
-def plot_temp_timestepped(ds, results_dict, month, CO2, time1, timesteps, ylim, diff_only):
-    fig, ax = plt.subplots(figsize = [6,8])
-    color=iter(cm.twilight(np.linspace(0,1,len(timesteps)+2)))
-    y1 = results_dict[time1]['z'][CO2][month]
-    y1 = np.append(y1, 0.)
-    yidx = y1 < ylim
-    y1 = y1[yidx]
-    x1 = np.asarray(results_dict[time1]['Tatm'][CO2][month])
-    x1 = np.append(x1, results_dict[time1]['Ts'][CO2][month])
-    x1 = x1[yidx]
-    c=next(color)
-    if diff_only == False:
-        plt.plot(x1, y1, c = c, label = np.round(time1 / climlab.constants.seconds_per_day, 0), lw = 2)
-    for idx, time in enumerate(timesteps):
-        c=next(color)
-        y2 = results_dict[time]['z'][CO2][month]
-        y2 = np.append(y2, 0.)
-        yidx = y2 < ylim
-        y2 = y2[yidx]
-        x2 = np.asarray(results_dict[time]['Tatm'][CO2][month])
-        x2 = np.append(x2, results_dict[time]['Ts'][CO2][month])
-        x2 = x2[yidx]
-        if diff_only:
-                plt.plot(x2-x1, y2, c = c, label = np.round(time / climlab.constants.seconds_per_day, 0), lw = 2)
-        else:
-            plt.plot(x2, y2, c = c, label = np.round(time / climlab.constants.seconds_per_day, 0), lw = 2)
+def plot_temp_timestepped(ds, results_dict, month1, month2, time1, timesteps, ylim, diff_only):
+    fig, axes = plt.subplots(2,2,figsize = [8,8])
+    for idx_c, CO2 in enumerate([.00038, .00076]):
+        for idx_m, month in enumerate([month1,month2]):
+            ax = axes[idx_c, idx_m]
+            color=iter(cm.twilight(np.linspace(0,1,len(timesteps)+2)))
+            y1 = results_dict[time1]['z'][CO2][month]
+            y1 = np.append(y1, 0.)
+            yidx = y1 < ylim
+            y1 = y1[yidx]
+            x1 = np.asarray(results_dict[time1]['Tatm'][CO2][month])
+            x1 = np.append(x1, results_dict[time1]['Ts'][CO2][month])
+            x1 = x1[yidx]
+            c=next(color)
+            if diff_only == False:
+                ax.plot(x1, y1, c = c, label = np.round(time1 / climlab.constants.seconds_per_day, 0), lw = 2)
+            for idx, time in enumerate(timesteps):
+                c=next(color)
+                y2 = results_dict[time]['z'][CO2][month]
+                y2 = np.append(y2, 0.)
+                yidx = y2 < ylim
+                y2 = y2[yidx]
+                x2 = np.asarray(results_dict[time]['Tatm'][CO2][month])
+                x2 = np.append(x2, results_dict[time]['Ts'][CO2][month])
+                x2 = x2[yidx]
+                if diff_only:
+                    ax.plot(x2-x1, y2, c = c, label = np.round(time / climlab.constants.seconds_per_day, 0), lw = 2)
+                else:
+                    ax.plot(x2, y2, c = c, label = np.round(time / climlab.constants.seconds_per_day, 0), lw = 2)
 
-    plt.xlabel('Temperature (K)', fontsize = 14)
-    plt.ylabel('Altitude relative to surface level (km)', fontsize = 14)
-    plt.title(f'Temperature Profiles {month}', fontsize = 20)
-    plt.legend(title="Days")
+            axes[1, idx_m].set_xlabel('Temperature (K)', fontsize = 14)
+            axes[idx_c, 0].set_ylabel('Altitude (km)', fontsize = 14)
+            axes[0, idx_m].set_title(f'{month}', fontsize = 20)
+            axes[idx_c, 1].annotate(f'{CO2*1e6} ppm', fontsize = 14, xycoords = 'axes fraction', xy =(1.05,.8))
+            ax.grid(True)
+
+    plt.legend(title="Days", bbox_to_anchor= [1.5,.5])
+    plt.tight_layout()
         
 def plot_turbulent_hr(ds, results_dict, month, CO2, timesteps, ylim):
     fig, ax = plt.subplots(figsize = [6,8])

@@ -5,7 +5,7 @@ from climlab.solar.insolation import daily_insolation
 
 single_level_process = {'LW_sfc_clr':r'Surface Longwave Flux ($\frac{W}{m^2}$)', 
                         'Ts': 'Surface Temperature (K)', 
-                        'ASRclr':r'Absorbed Solar Radiation, Top of Atmosphere ($\frac{W}{m^2}$)', 
+                        'ASRclr':r'ASR ($\frac{W}{m^2}$)', 
                         'SW_sfc_clr':r'Surface Shortwave Flux ($\frac{W}{m^2}$)', 
                         'total_sfc_flux':r'Total Radiative Surface Flux ($\frac{W}{m^2}$)', 
                         'dtheta_dz_near_surf_init':r'$\frac{d\theta}{dz}$ ($\frac{K}{m}$)', 
