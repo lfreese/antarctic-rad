@@ -4,9 +4,9 @@ import climlab
 from matplotlib.pyplot import cm
 import util
     
-def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1, month, figsize, rows, columns, ylim, diff_only = False):
-    fig = plt.figure(figsize = figsize)
-    atm_process_dict = {'Tatm':'Atmospheric Temperature (K)',
+def plot_co2_dif(results_dict, output, output_dict, month_list, CO2_conc1, CO2_conc2, time1, figsize, rows, columns, ylim, diff_only = False):
+    fig,axes = plt.subplots(1, len(month_list), figsize = figsize)
+    atm_process_dict = {'Tatm':'Temperature (K)',
                     'atm_diffk':r'Atmospheric $\kappa$ ($\frac{m^2}{s}$)',
                     'dtheta_dz':r'$\frac{d\theta}{dz}$ ($\frac{K}{m}$)',
                     'theta':r'$\theta$',
@@ -18,8 +18,8 @@ def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1
                     'advection_Tatm':r'Advective Heating Rate ($\frac{K}{s}$)',
                    'atm_turbulent_flux':'Turbulent Flux'}
     colors = cm.twilight(np.linspace(0,1,7))
-    for idx, output in enumerate(outputs):  
-        ax = fig.add_subplot(rows, columns, idx +1)
+    for idx_m, month in enumerate(month_list):
+        ax = axes[idx_m]
         if (output == 'atm_diffk' or output == 'dtheta_dz' or output == 'atm_turbulent_flux'):
             y1 = np.asarray(results_dict[time1][output_dict['bounds'][output]][CO2_conc1][month][:-1])
         else:
@@ -46,18 +46,21 @@ def plot_co2_dif(results_dict, outputs, output_dict, CO2_conc1, CO2_conc2, time1
         x2 = x2[yidx]
 
         if diff_only:
-            plt.plot(x2-x1, y1, color = colors[4], linewidth = 2, linestyle = '--');
-            plt.title(f'Difference between {CO2_conc1*(1e6)} ppm and {CO2_conc2*(1e6)} ppm \n {atm_process_dict[output]} in {month} at {time1/ climlab.constants.seconds_per_day} days')
+            ax.plot(x2-x1, y1, color = colors[4], linewidth = 2, linestyle = '--');
+            ax.set_title(f'{month}', fontsize = 14)
+            plt.suptitle(f'{atm_process_dict[output]} difference between {CO2_conc1*(1e6)} ppm and {CO2_conc2*(1e6)} ppm', fontsize = 20, y = 1.05)
+           
         else:
-            plt.plot(x1, y1, color = colors[2], linewidth = 2, label = f'{output} at {CO2_conc1*(1e6)} ppm');
-            plt.plot(x2, y2, color = colors[4], linewidth = 2,label = f'{output} at {CO2_conc2*(1e6)} ppm');
-            plt.title(f'{atm_process_dict[output]} in {month} at CO2 {CO2_conc1*(1e6)} ppm and {CO2_conc2*(1e6)} ppm \n at {np.round(time1 / climlab.constants.seconds_per_day, 3)} days')
-            plt.legend()
+            ax.plot(x1, y1, color = colors[2], linewidth = 2, label = f'{output} at {CO2_conc1*(1e6)} ppm');
+            ax.plot(x2, y2, color = colors[4], linewidth = 2,label = f'{output} at {CO2_conc2*(1e6)} ppm');
+            ax.set_title(f'{month}', fontsize = 14)
+            plt.suptitle(f'{atm_process_dict[output]} at CO2 {CO2_conc1*(1e6)} ppm and {CO2_conc2*(1e6)} ppm \n at {np.round(time1 / climlab.constants.seconds_per_day, 3)} days', fontsize = 20)
+            ax.legend()
         
-        plt.ylabel('Altitude')
-        plt.ylim([0,ylim])
-        plt.xlabel(f'{output}')
-        plt.xticks(rotation = 45)
+        ax.set_ylabel('Altitude', fontsize = 14)
+        ax.set_ylim([0,ylim])
+        ax.set_xlabel(f'{atm_process_dict[output]}', fontsize = 14)
+        ax.grid(True)
         plt.tight_layout()
         
 def single_level_plot(results_dict, output_list, CO2_conc1, CO2_conc2, month_list, figsize):
@@ -148,14 +151,12 @@ def plot_temp(ds, results_dict):
         c=next(color)
         x = np.asarray(results_dict[0]['Tatm'][0.00038][month])
         x = np.append(x, results_dict[0]['Ts'][0.00038][month])
-        y = results_dict[0]['z'][0.00038][month]/1000
-        y = np.append(y, 0.)
+        y = results_dict[0]['lev'][0.00038][month]
+        y = np.append(0., y)
         plt.plot(x, y, c = c, label = month, lw = 2)
-        plt.xlabel('Temperature (K)', fontsize = 14)
-        plt.ylabel('Altitude relative to surface level (km)', fontsize = 14)
-        plt.yscale('log')
-        ax.yaxis.set_ticklabels([0, 0,.1,1, 10])
-        plt.title('Monthly Temperature Profiles', fontsize = 20)
+        plt.xlabel('Temperature (K)', fontsize = 16)
+        plt.ylabel('Pressure (hPa)', fontsize = 16)
+        plt.ylim([750,-50])
         plt.legend(title = 'Months')
 
 def plot_temp_timestepped(ds, results_dict, month1, month2, time1, timesteps, ylim, diff_only):
@@ -235,7 +236,7 @@ def plot_turbulent_flux(ds, results_dict, month, CO2, timesteps, ylim):
 
 def plot_sfc_TOA_process(ds, results_dict, process, months, single_level_process):
     fig, axes = plt.subplots(1,2, figsize = [12,4])
-    color=iter(cm.twilight(np.linspace(0,1,8)))
+    color=iter(cm.twilight(np.linspace(0,1,20)))
     for CO2_conc in results_dict[0][process].keys():
         c=next(color)
         for idx, month in enumerate(months):
