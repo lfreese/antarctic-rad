@@ -1,8 +1,9 @@
-.ipynb_checkpoints
-.DS_Store
+*.ipynb_checkpoints
+*.DS_Store
 __pycache__
 ozone
 soundings
 references
 old_notebooks
 lectures
+*.csv

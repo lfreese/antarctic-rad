@@ -79,6 +79,7 @@ class Turbulence(TimeDependentProcess):
             self.surface_diffk = surface_diffk
         #atmospheric diffk (n)
         scale_factor = 100 #m
+        self.atm_diffk = np.ones_like(self.rad.diagnostics['LW_flux_down'])
         self.atm_diffk = self.surface_diffk * (np.exp(-(self.z_bounds)[:-1]/scale_factor)) #m^2/s
 
     def _compute(self):
@@ -92,7 +93,7 @@ class Turbulence(TimeDependentProcess):
         #theta (length of n)
         self.theta = self.state['Tatm'] * (np.asarray(self.dataset['Pressure'].sel(month = self.m).isel(level = -1))/self.lev)**(self.R_cp)#K
         #dtheta_dz_init (length of n+1)
-        self.dtheta_dz = np.zeros(len(self.state['Tatm']))
+        self.dtheta_dz = np.zeros_like(self.state['Tatm'])
         self.dtheta_dz[1:] = np.diff(self.theta)/np.diff(self.z)
         self.dtheta_dz[0] =  0 #TOA flux is zero so we set this to zero so that when they are multiplied TOA flux = 0
         #calculate the atmospheric turbulent flux
@@ -100,7 +101,7 @@ class Turbulence(TimeDependentProcess):
         #calculate/prescribe surface turbulent flux
         self.sfc_turbulent_flux = np.squeeze(-self.surface_diffk * ((self.theta[-1]-self.Ts)/(self.z[-1] - z_ground)) * (cp_air*density)) #W/m^2
         # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
-        self.turb_atm_hr = np.zeros(len(self.state['Tatm']))
+        self.turb_atm_hr = np.zeros_like(self.state['Tatm'])
         #ignore bottom z_bounds since this is the surface level
         self.turb_atm_hr[:-1] = -(np.diff(self.atm_turbulent_flux)/np.diff((self.z_bounds))[:-1])/(cp_air*density) #K/sec 
         self.turb_atm_hr[-1] = -((self.atm_turbulent_flux[-1] - self.sfc_turbulent_flux)/(self.z_bounds[-2] - self.z_bounds[-1]))/(cp_air*density) 
@@ -115,11 +116,18 @@ class Turbulence(TimeDependentProcess):
         return tendencies
 
 def init_ram(
-        ds, m, CO2, timestep, advection = None,
+        ds, m, CO2, timestep, turbulence_on, advection_on, advection = None,
         surface_diffk = None, albedo = .8
     ):
     #create two domains: atm and surface
     sfc, atm=climlab.domain.single_column(lev=ds['Pressure'].sel(month=m).values, water_depth=1.);
+    #change the level bounds
+    atm.axes['lev'].bounds[0] = atm.axes['lev'].bounds[1]-2*(atm.axes['lev'].bounds[1] - atm.axes['lev'].points[0])
+    atm.axes['lev'].bounds[-1] = atm.axes['lev'].bounds[-2]+2*(atm.axes['lev'].points[-1] - atm.axes['lev'].bounds[-2])
+    #change the level delta
+    atm.axes['lev'].delta = atm.axes['lev'].bounds[1:] - atm.axes['lev'].bounds[0:-1]
+    #update heat capacity
+    atm.set_heat_capacity()
     #create an atmospheric state
     state = AttrDict()
     #set up a surface temperature profile 
@@ -163,23 +171,28 @@ def init_ram(
     ram.add_subprocess('Radiation', rad)
     #compute ram
     ram.compute()
-    #turbulence model setup (coupled to rad model, ds, and month)
-    turb = Turbulence(surface_diffk = surface_diffk, name = 'Turbulence', state=state, rad = rad, m = m, ds = ds, timestep = timestep)
-    #add turbulence
-    ram.add_subprocess('Turbulence', turb) #add insolation subprocess
-    #compute ram
-    ram.compute()
-    #advective model setup (coupled to rad model)
-    adv = climlab.process.external_forcing.ExternalForcing(state = state, turb = turb, ram = ram)
-    normal_advection = -((ram.TdotSW_clr + ram.TdotLW_clr)/climlab.constants.seconds_per_day + turb.turb_atm_hr) #(K/day + K/day)/(sec/day) + K/sec
-    if advection == None:
-        adv.forcing_tendencies['Tatm'] = normal_advection 
-    else:
-        adv.forcing_tendencies['Tatm'] = np.copy(advection[m])
-    #add advection
-    ram.add_subprocess('Advection', adv)
-    #compute ram
-    ram.compute()
+    if turbulence_on == True:
+        #turbulence model setup (coupled to rad model, ds, and month)
+        turb = Turbulence(surface_diffk = surface_diffk, name = 'Turbulence', state=state, rad = rad, m = m, ds = ds, timestep = timestep)
+        #add turbulence
+        ram.add_subprocess('Turbulence', turb) #add insolation subprocess
+        #compute ram
+        ram.compute()
+    if turbulence_on == False:
+        turb = None
+    if advection_on:
+        #advective model setup (coupled to rad model)
+        adv = climlab.process.external_forcing.ExternalForcing(state = state, ram = ram, turb = turb)
+        if turbulence_on:
+            normal_advection = -((ram.TdotSW_clr + ram.TdotLW_clr)/climlab.constants.seconds_per_day + turb.turb_atm_hr) #(K/day + K/day)/(sec/day) + K/sec
+        if advection == None:
+            adv.forcing_tendencies['Tatm'] = normal_advection 
+        else:
+            adv.forcing_tendencies['Tatm'] = np.copy(advection[m])
+        #add advection
+        ram.add_subprocess('Advection', adv)
+        #compute ram
+        ram.compute()
     
     return ram
 
@@ -250,11 +263,11 @@ def annual_mean_sfc_diffk(ds, ram_dict):
     average_surface_diffk = sum_surface_diffk/months_for_mean
     return average_surface_diffk
 
-def fill_ensemble(ds, ram_dict, timestep, advection, surface_diffk):
+def fill_ensemble(ds, ram_dict, timestep, turbulence_on, advection_on, advection, surface_diffk):
     for CO2 in ds['CO2_list'].values:
         ram_dict[CO2] = {}
         for m in np.asarray(ds['month']):
-            ram = init_ram(ds = ds, m = m, CO2 = CO2, timestep = timestep, advection = advection, surface_diffk = surface_diffk)
+            ram = init_ram(ds = ds, m = m, CO2 = CO2, timestep = timestep, turbulence_on = turbulence_on, advection_on = advection_on, advection = advection, surface_diffk = surface_diffk)
             ram_dict[CO2][m] = {}
             ram_dict[CO2][m] = ram
     return ram_dict

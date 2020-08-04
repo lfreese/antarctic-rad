@@ -234,8 +234,8 @@ def plot_turbulent_flux(ds, results_dict, month, CO2, timesteps, ylim):
         plt.legend(title="Days")
         plt.xticks(rotation = '45')
 
-def plot_sfc_TOA_process(ds, results_dict, process, months, single_level_process):
-    fig, axes = plt.subplots(1,2, figsize = [12,4])
+def plot_sfc_TOA_process(ds, n_col, results_dict, process, months, single_level_process, figsize):
+    fig, axes = plt.subplots(1,n_col, figsize = figsize)
     color=iter(cm.twilight(np.linspace(0,1,20)))
     for CO2_conc in results_dict[0][process].keys():
         c=next(color)
