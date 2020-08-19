@@ -69,7 +69,14 @@ We aim to bring together much of this work by developing a single-column radiati
 \end{figure}
 
 \subsection{Model Setup}
-We utilize these monthly temperature profiles in a single column model in CLIMLAB \citep{rose_climlab_2018}, an open source python climate model. We adjust the solar insolation to a monthly mean insolation, to capture the variability in shortwave radiation in summer and winter seasons in the Antarctic. 
+We utilize these monthly temperature profiles in a single column model in CLIMLAB \citep{rose_climlab_2018}, an open source python climate model. We adjust the solar insolation to a monthly mean insolation, to capture the variability in shortwave radiation in summer and winter seasons in the Antarctic (insolation values can be seen in Figure \ref{fig:solar_insol}. 
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=.5\textwidth]{figures/solar_insol.png}
+\centering
+\caption{Monthly solar insolation }
+\label{fig:solar_insol}
+\end{figure}
 
 Our single-column model is comprised of three parts: a radiative component, an advective component, and a turbulent component. The radiation is calculated utilizing an RRTMG radiation scheme (\linkhttp{http://rtweb.aer.com/rrtm\_frame.html}). The model computes temperature tendencies from the flux divergence of each component and steps the temperature forward in time:
 \begin{equation}
