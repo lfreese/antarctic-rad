@@ -12,6 +12,7 @@ class Turbulence(TimeDependentProcess):
     k0 = Net surface flux/(dtheta/dz) at surface 
     ka = k0*exp(-z/d) in atmosphere
     -ka * dtheta/dz is turbulent flux in the atmosphere
+    Surface level is at lev_bound and z_bound [-1]; lowest atm level at z and lev [-1]
     """    
     def __init__(self, surface_diffk = None, **kwargs):
         #define initial state
@@ -30,7 +31,7 @@ class Turbulence(TimeDependentProcess):
         self.add_diagnostic('atm_turbulent_flux', 0. * (self.Tatm))
         self.add_diagnostic('sfc_turbulent_flux', 0. * self.Ts)
         self.add_diagnostic('turb_atm_hr', 0. * self.Tatm)
-        self.add_diagnostic('turb_sfc_hr', 0. * self.Ts)
+        self.add_diagnostic('turb_ground_hr', 0. * self.Ts)
         self.add_diagnostic('turb_hr', 0. * (self.Tatm+1))
         self.add_diagnostic('z', 0. * self.Tatm)
         self.add_diagnostic('z_bounds', 0. * (self.Tatm +1)) #include z_bound lowest as surface level
@@ -67,14 +68,15 @@ class Turbulence(TimeDependentProcess):
         self.total_sfc_flux_init = (rad.diagnostics['SW_sfc_clr']- rad.diagnostics['LW_sfc_clr']) #W/m^2
         #gas constant / specific heat of air
         R = 287 #gas constant of air J/kg*K (at 250 K)
-        cp_air = 1003 #specific heat of air (at 250 K) J/(kg*K)
-        density = 1.05 #density of air kg/m^3
+        cp_air = 1004 #specific heat of air (at 250 K) J/(kg*K)
+        dp_sfc = (self.lev_bounds[-1] - self.lev[-1]) #pressure difference between lowest bounds (surface) and the lowest atm layer
+        dz_sfc = (self.z_bounds[-1] - self.z[-1]) #altitude difference between lowest bounds (surface) and the lowest atm layer
         self.R_cp = R/cp_air 
         self.theta_init = self.state['Tatm']*(np.asarray(self.dataset['Pressure'].sel(month = m).isel(level = -1))/self.lev)**(self.R_cp)#K
         #dtheta_dz_init (just need the first value of dtheta/dz)
-        self.dtheta_dz_surf_init = (self.theta_init[-1]-self.Ts)/(self.z[-1] - z_ground) #K/m
+        self.dtheta_dz_surf_init = (self.theta_init[-1]-self.Ts)/(dz_sfc) #K/m
         if surface_diffk == None:
-            self.surface_diffk = (-self.total_sfc_flux_init/self.dtheta_dz_surf_init)/(density*cp_air) #m^2/s
+            self.surface_diffk = (-self.total_sfc_flux_init/self.dtheta_dz_surf_init)/(climlab.utils.heat_capacity.atmosphere(dp_sfc)/(dz_sfc)) #m^2/s
         else:
             self.surface_diffk = surface_diffk
         #atmospheric diffk (n)
@@ -86,10 +88,10 @@ class Turbulence(TimeDependentProcess):
         #constants
         dz_ground = 1.
         z_ground = -.5
-        dp_ground = (self.lev_bounds[-1] - self.lev_bounds[-2])
+        dp_sfc = (self.lev[-1] - self.lev_bounds[-1]) #pressure difference between lowest bounds (surface) and the lowest atm layer
+        dz_sfc = (self.z[-1] - self.z_bounds[-1]) #altitude difference between lowest bounds (surface) and the lowest atm layer
         cp_air = 1004.  #specific heat of air (at 250 K) J/(kg*K)
         g = 9.81 #m/s2
-        hpa_to_pa = 100. #conversion factor
         #surface flux (LW + SW)
         self.total_sfc_flux = (self.rad.diagnostics['SW_sfc_clr'] - self.rad.diagnostics['LW_sfc_clr']) #W/m^2
         #theta (length of n)
@@ -99,17 +101,22 @@ class Turbulence(TimeDependentProcess):
         self.dtheta_dz[1:] = np.diff(self.theta)/np.diff(self.z)
         self.dtheta_dz[0] =  0 #TOA flux is zero so we set this to zero so that when they are multiplied TOA flux = 0
         #calculate the atmospheric turbulent flux
-        self.atm_turbulent_flux = -self.atm_diffk * self.dtheta_dz *(climlab.utils.heat_capacity.atmosphere(np.diff(self.lev_bounds)/np.diff(self.z_bounds))) #W/m^2
+        dz_toa = (self.z[0] + (self.z[0] - self.z[1])) - self.z[0]
+        dp_toa = (self.lev[0] + (self.lev[0] - self.lev[1])) - self.z[0]
+        # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
+        self.atm_turbulent_flux = np.zeros_like(self.state['Tatm'])
+        self.atm_turbulent_flux[1:] = -self.atm_diffk[1:] * self.dtheta_dz[1:] *(-climlab.utils.heat_capacity.atmosphere(np.diff(self.lev))/(np.diff(self.z))) #W/m^2
+        self.atm_turbulent_flux[0] = -self.atm_diffk[0] * self.dtheta_dz[0] *(-climlab.utils.heat_capacity.atmosphere(dp_toa)/(dz_toa))
         #calculate/prescribe surface turbulent flux
-        self.sfc_turbulent_flux = np.squeeze(-self.surface_diffk * ((self.theta[-1]-self.Ts)/(self.z[-1] - z_ground)) * (climlab.utils.heat_capacity.atmosphere(dp_ground)/(self.z[-1] - z_ground))) #W/m^2
+        self.sfc_turbulent_flux = np.squeeze(-self.surface_diffk * ((self.theta[-1]-self.Ts)/(dz_sfc)) *(-climlab.utils.heat_capacity.atmosphere(dp_sfc)/(dz_sfc))) #W/m^2
         # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
         self.turb_atm_hr = np.zeros_like(self.state['Tatm'])
         #ignore bottom z_bounds since this is the surface level
-        self.turb_atm_hr[:-1] = (np.diff(self.atm_turbulent_flux)/np.diff((self.lev_bounds))[:-1])*(g/(cp_air*hpa_to_pa)) #K/sec 
-        self.turb_atm_hr[-1] = ((self.atm_turbulent_flux[-1] - self.sfc_turbulent_flux)/(self.lev_bounds[-2] - self.lev_bounds[-1]))*(g/(cp_air*hpa_to_pa)) #K/sec 
-        self.turb_sfc_hr= [(np.asarray(self.sfc_turbulent_flux)/dz_ground)/(climlab.utils.heat_capacity.ocean(dz_ground))] #K/sec
-        self.turb_hr = np.concatenate([self.turb_atm_hr,self.turb_sfc_hr])
-        tendencies = {'Tatm' : self.turb_atm_hr, 'Ts' : self.turb_sfc_hr}
+        self.turb_atm_hr[:-1] = -np.diff(self.atm_turbulent_flux)/(-climlab.utils.heat_capacity.atmosphere(np.diff((self.lev_bounds))[:-1])) #K/sec 
+        self.turb_atm_hr[-1] = -(self.atm_turbulent_flux[-1] - self.sfc_turbulent_flux)/(-climlab.utils.heat_capacity.atmosphere(dp_sfc)) #K/sec 
+        self.turb_ground_hr= [-(np.asarray(self.sfc_turbulent_flux - 0)/dz_ground)*(dz_ground/(climlab.utils.heat_capacity.ocean(dz_ground)))] #K/sec
+        self.turb_hr = np.concatenate([self.turb_atm_hr,self.turb_ground_hr])
+        tendencies = {'Tatm' : self.turb_atm_hr, 'Ts' : self.turb_ground_hr}
         
         # check that CFL condition is met
         self._CFL = self.surface_diffk*(self.time['timestep']/(np.diff(self.z_bounds)**2))[-1] 
