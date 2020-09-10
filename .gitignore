@@ -7,4 +7,5 @@ references
 old_notebooks
 lectures
 *.csv
-/notebooks/output
+/output/*
+/notebooks/output/*_ds

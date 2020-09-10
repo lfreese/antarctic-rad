@@ -28,8 +28,7 @@ class Turbulence(TimeDependentProcess):
         self.add_diagnostic('theta', 0. * (self.Tatm))
         self.add_diagnostic('dtheta_dz', 0. * (self.Tatm))
         self.add_diagnostic('atm_diffk', 0. * (self.Tatm))
-        self.add_diagnostic('atm_turbulent_flux', 0. * (self.Tatm))
-        self.add_diagnostic('sfc_turbulent_flux', 0. * self.Ts)
+        self.add_diagnostic('atm_turbulent_flux', 0. * (self.Tatm+1))
         self.add_diagnostic('turb_atm_hr', 0. * self.Tatm)
         self.add_diagnostic('turb_ground_hr', 0. * self.Ts)
         self.add_diagnostic('turb_hr', 0. * (self.Tatm+1))
@@ -104,17 +103,16 @@ class Turbulence(TimeDependentProcess):
         dz_toa = (self.z[0] + (self.z[0] - self.z[1])) - self.z[0]
         dp_toa = (self.lev[0] + (self.lev[0] - self.lev[1])) - self.z[0]
         # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
-        self.atm_turbulent_flux = np.zeros_like(self.state['Tatm'])
-        self.atm_turbulent_flux[1:] = -self.atm_diffk[1:] * self.dtheta_dz[1:] *(-climlab.utils.heat_capacity.atmosphere(np.diff(self.lev))/(np.diff(self.z))) #W/m^2
+        self.atm_turbulent_flux = np.zeros_like(self.lev_bounds)
+        self.atm_turbulent_flux[1:-1] = -self.atm_diffk[1:] * self.dtheta_dz[1:] *(-climlab.utils.heat_capacity.atmosphere(np.diff(self.lev))/(np.diff(self.z))) #W/m^2
         self.atm_turbulent_flux[0] = -self.atm_diffk[0] * self.dtheta_dz[0] *(-climlab.utils.heat_capacity.atmosphere(dp_toa)/(dz_toa))
-        #calculate/prescribe surface turbulent flux
-        self.sfc_turbulent_flux = np.squeeze(-self.surface_diffk * ((self.theta[-1]-self.Ts)/(dz_sfc)) *(-climlab.utils.heat_capacity.atmosphere(dp_sfc)/(dz_sfc))) #W/m^2
-        # calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
+        self.atm_turbulent_flux[-1] = np.squeeze(-self.surface_diffk * ((self.theta[-1]-self.Ts)/(dz_sfc)) *(-climlab.utils.heat_capacity.atmosphere(dp_sfc)/(dz_sfc))) #W/m^2
+        
+        #calculate heating rate (flux convergence) from flux and convert into K/sec (which is the heating rate output in climlab)
         self.turb_atm_hr = np.zeros_like(self.state['Tatm'])
         #ignore bottom z_bounds since this is the surface level
-        self.turb_atm_hr[:-1] = -np.diff(self.atm_turbulent_flux)/(-climlab.utils.heat_capacity.atmosphere(np.diff((self.lev_bounds))[:-1])) #K/sec 
-        self.turb_atm_hr[-1] = -(self.atm_turbulent_flux[-1] - self.sfc_turbulent_flux)/(-climlab.utils.heat_capacity.atmosphere(dp_sfc)) #K/sec 
-        self.turb_ground_hr= [-(np.asarray(self.sfc_turbulent_flux - 0)/dz_ground)*(dz_ground/(climlab.utils.heat_capacity.ocean(dz_ground)))] #K/sec
+        self.turb_atm_hr = -np.diff(self.atm_turbulent_flux)/(-climlab.utils.heat_capacity.atmosphere(np.diff((self.lev_bounds)))) #K/sec 
+        self.turb_ground_hr= [-(np.asarray(self.atm_turbulent_flux[-1] - 0)/dz_ground)*(dz_ground/(climlab.utils.heat_capacity.ocean(dz_ground)))] #K/sec
         self.turb_hr = np.concatenate([self.turb_atm_hr,self.turb_ground_hr])
         tendencies = {'Tatm' : self.turb_atm_hr, 'Ts' : self.turb_ground_hr}
         
@@ -204,6 +202,31 @@ def init_ram(
         ram.compute()
     
     return ram
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def init_ram_no_advection(
         ds, m, CO2, timestep,
