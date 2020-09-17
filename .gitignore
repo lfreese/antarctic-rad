@@ -7,6 +7,6 @@ references
 old_notebooks
 lectures
 *.csv
-/output/*
+output/
 *.pptx
-/notebooks/output/*_ds
+notebooks/output/
