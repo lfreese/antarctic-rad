@@ -8,4 +8,5 @@ old_notebooks
 lectures
 *.csv
 /output/*
+*.pptx
 /notebooks/output/*_ds
