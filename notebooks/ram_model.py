@@ -79,7 +79,7 @@ class Turbulence(TimeDependentProcess):
         else:
             self.surface_diffk = surface_diffk
         #atmospheric diffk (n)
-        scale_factor = 100 #m
+        scale_factor = 500 #100 #m
         self.atm_diffk = np.ones_like(self.rad.diagnostics['LW_flux_down'])
         self.atm_diffk = self.surface_diffk * (np.exp(-(self.z_bounds)[:-1]/scale_factor)) #m^2/s
 
