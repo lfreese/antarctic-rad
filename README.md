@@ -1,6 +1,6 @@
 # antarctic-rad
 
-Notebooks contains current notebooks for creating the single column model as well as the figures for the paper; 
+Notebooks contains current notebooks for creating the single column model, figures for the paper, and additional figures used for presentations and analysis;
 
 Figures contains png of all figures being used for paper; 
 
