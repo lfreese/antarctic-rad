@@ -124,7 +124,7 @@ class Turbulence(TimeDependentProcess):
 
 def init_ram(
         ds, m, CO2, timestep, turbulence_on, advection_on, advection = None,
-        surface_diffk = None, albedo = .8
+        surface_diffk = None, albedo = .7
     ):
     #create two domains: atm and surface
     sfc, atm=climlab.domain.single_column(lev=ds['Pressure'].sel(month=m).values, water_depth=1.);
