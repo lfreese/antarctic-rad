@@ -10,3 +10,4 @@ lectures
 output/
 *.pptx
 notebooks/output/
+.nc
