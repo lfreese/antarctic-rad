@@ -11,3 +11,4 @@ output/
 *.pptx
 notebooks/output/
 *.nc
+*.docx
