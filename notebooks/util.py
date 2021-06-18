@@ -37,7 +37,7 @@ def load_soundings():
     ds.__delitem__('CO') #delete unused variables
     ds.__delitem__('CH4') #delete unused variables
     ds.__delitem__('Height') #delete unused variables
-    ds['CO2_list'] = np.array([0.,1, 5, 20, 50, 100.,200.,380.,760.,1000.,1500.])/(1e6) #list of CO2 values we will use
+    ds['CO2_list'] = np.array([0.,1., 2., 3., 4., 5, 20, 50, 100.,200.,380.,760.,1000.,1500.])/(1e6) #list of CO2 values we will use
 
     ds.attrs['name'] = 'all'
     
@@ -65,12 +65,11 @@ def adjust_lev(ds, nlevels = 96, name = 'strat'):
     ds.attrs['extra_Altitude'] = ds['Altitude'].sel(level=nlevels+1)
     ds = ds.sel(level=slice(nlevels,0))
     ds.attrs['name'] = name
-    dropped_lev = [1,2,3,4,5,6,7,9,10,11,12,14,15,17,18,20,22,24,26]
+    dropped_lev = [1,2,3,4,5,6,7,9,10,11,12,14,15,17,18,20,22,24,26] # drops to one every 100m
+    #[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,24] drops to one every 300m
+    #[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28] drops to one every 1000m
     #modify our dataset to skip levels near the surface so that it is more spaced out
-    ds = ds.drop(level = [1,2,3,4,5,6,7,9,10,11,12,14,15,17,18,20,22,24,26]) #drops to one every 100m
-    #ds = ds.drop(level = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,24]) #drops to one every 300m
-    #ds = ds.drop(level = dropped_lev) #drops to one every 500m for the first 1000m
-    #ds_strat = ds_strat.drop(level = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28]) #drops to one every 1000m
+    ds = ds.drop(level = dropped_lev) 
     print(f'Dropped levels {dropped_lev}')
     ds['level'] = np.flip(np.arange(ds['level'].size))
     ds['Altitude'].sel(month = 'January')
