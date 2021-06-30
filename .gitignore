@@ -12,3 +12,5 @@ output/
 notebooks/output/
 *.nc
 *.docx
+/overleaf/
+*.pdf
